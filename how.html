@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Pick Who Next decides</title>
+<meta name="description" content="Where the numbers come from and how the recommendation is built: ADP, projections, replacement level, the wait gap, and the roster-need multiplier.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f1a2b'/%3E%3Cpath d='M14 34l12 12 24-26' fill='none' stroke='%2334d399' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><a href="/" class="logo"><span class="mark"></span>Pick Who Next</a><span class="tag">snake drafts</span></div>
+  <nav class="topnav"><a href="/">Back to the board</a></nav>
+</header>
+<main class="doc">
+  <h1>How it decides</h1>
+  <p class="lede">Everything the tool knows, where it came from, and exactly what it does with it. If a recommendation ever looks wrong, this page should explain why it said what it said.</p>
+
+  <h2>What the tool is</h2>
+  <p>A second screen for a snake draft. You keep the draft running wherever it runs (ESPN, Yahoo, Sleeper, a whiteboard) and mark picks here as they happen. When your turn comes, the top of the page names the player it would take, with the reasoning next to the name. It works for one team: yours. It does not know who the other teams have, only who is gone.</p>
+  <p>It does not do auction drafts. Auction value depends on every team&rsquo;s remaining budget and who has been nominated, and that state lives inside the platform. A snake draft needs only a list and a pen.</p>
+
+  <h2>The data</h2>
+  <table id="dataTable">
+    <tr><th>What</th><th>Source</th><th>Detail</th></tr>
+    <tr><td>Average draft position (ADP)</td><td>Fantasy Football Calculator, blended with Sleeper</td><td id="adpDetail">Loading&hellip;</td></tr>
+    <tr><td>Projected season points</td><td>RotoWire, via Sleeper</td><td id="projDetail">Loading&hellip;</td></tr>
+    <tr><td>Injuries</td><td>Sleeper</td><td id="injDetail">Loading&hellip;</td></tr>
+    <tr><td>Bye weeks, rookies, teams</td><td>Fantasy Football Calculator and Sleeper</td><td>Bye weeks per team. A rookie is a player with zero seasons of experience.</td></tr>
+  </table>
+  <p>The data is built into a file before each deploy and refreshed daily during draft week. The build date is in the footer of the board. Nothing is fetched while you draft, which is why the page is fast and why an injury reported an hour ago may not be here yet.</p>
+  <p>Each scoring format has its own ADP and its own projection. Switching the format switches both. ADP tells you when the market takes a player. Projections tell you what the player is expected to score. The tool uses each for what it is good at.</p>
+
+  <h2>Scoring formats</h2>
+  <p>PPR gives a point per reception, half PPR gives half a point, standard gives none. The difference moves pass-catching running backs, receivers, and tight ends up or down relative to rushing backs and quarterbacks. Because the ADP and the projections are both format-specific, the tool does not approximate one format from another. If a player&rsquo;s projection is missing for a format, it is estimated from the projections of neighbouring players at the same position by ADP, and marked with a tilde on the board.</p>
+
+  <h2>Value: points above replacement</h2>
+  <p>The <b>Value</b> column is the player&rsquo;s projected points minus the projected points of the <b>replacement player</b> at that position: the last starter in your league. In a 12-team league with two running back slots and one flex, the tool expects about 30 running backs to start (24 in RB slots, plus half of the 12 flex slots), so the replacement running back is the 30th best by projection. For quarterbacks it is the 12th. This is why a quarterback projected for 360 points can be worth less than a running back projected for 280: the 12th quarterback is still very good, and the 30th running back is not.</p>
+  <p>The flex share is fixed: half of flex slots go to running backs, four tenths to receivers, one tenth to tight ends. Replacement level is computed once from the full pool and does not move during the draft. That keeps the Value column stable, so a player&rsquo;s number means the same thing in round two and round nine.</p>
+
+  <h2>The recommendation</h2>
+  <p>The player named at the top of the board is the one with the highest <b>score</b>. The score has three parts.</p>
+  <p><b>1. The wait gap.</b> For each position, the tool finds the best player still on the board who is likely to survive until your next pick, meaning their ADP is later than your next pick number plus a small margin of two. A player&rsquo;s wait gap is their projection minus that survivor&rsquo;s projection: what you lose at this position by waiting one turn. This is the core of the method, and it is why the tool needs your draft slot. Two players with equal wait gaps are equally urgent even if one is a star and one is a tight end, because taking the star now and the tight end later leaves you with the same total as the other way round. If your slot is not set, the wait gap falls back to the Value column.</p>
+  <p><b>2. A nudge toward value.</b> Fifteen percent of the player&rsquo;s Value is added, so that ties between equally urgent players break toward the better player overall.</p>
+  <p><b>3. The roster-need multiplier.</b> The sum is multiplied by a factor that depends on where the player would go on your roster.</p>
+  <table>
+    <tr><th>Where the player would land</th><th>Multiplier</th></tr>
+    <tr><td>An open starting slot at their position</td><td>1.0</td></tr>
+    <tr><td>An open flex slot (RB, WR, TE)</td><td>0.85</td></tr>
+    <tr><td>The bench, for a running back or receiver</td><td>0.5</td></tr>
+    <tr><td>The bench, for a quarterback or tight end</td><td>0.35</td></tr>
+    <tr><td>A kicker or defense while any other starting slot is open</td><td>0.25</td></tr>
+    <tr><td>A kicker or defense once your other starters are set</td><td>1.0</td></tr>
+    <tr><td>No room at all</td><td>0.05</td></tr>
+  </table>
+  <p>The multiplier is what stops the tool from recommending a fifth running back for your bench when you have no tight end, and what keeps kickers out of round four. It is a blunt instrument on purpose. A draft is not the time for a subtle one.</p>
+  <p>Players listed as out, on injured reserve, on the physically-unable-to-perform list, or suspended are never recommended, though they stay on the board with a red tag in case you want them anyway. Players listed as questionable lose five percent of their score and carry a yellow tag.</p>
+
+  <h2>Tiers and position runs</h2>
+  <p>Within each position, players are sorted by projection, and a new tier begins wherever the drop to the next player is more than six percent of the previous player&rsquo;s points, or eight points, whichever is larger. The <b>Position runs</b> panel counts how many players are left in the top remaining tier and the size of the drop after them. When that count reaches two, the note turns yellow. That is the moment a run at the position is about to cost you.</p>
+
+  <h2>The clock</h2>
+  <p>A snake draft reverses direction every round. Given the number of teams and your slot, the tool knows every pick number that is yours, and shows the next one and how many picks away it is. The overall pick number is simply how many picks have been marked plus one, so the clock is only as accurate as your marking. If you fall behind, mark the missing picks and it catches up. Undo takes back the last one.</p>
+
+  <h2>What it does not know</h2>
+  <ul>
+    <li>Who the other teams have drafted. It knows who is gone, not where they went, so it cannot predict that the team picking before you needs a quarterback.</li>
+    <li>Your league&rsquo;s exact scoring beyond the reception rule. Bonuses, six-point passing touchdowns, and return yardage are not modeled.</li>
+    <li>Anything that happened after the data was built. See the footer for the date.</li>
+    <li>Keepers and dynasty rules. Mark kept players as taken before you begin.</li>
+    <li>Auction drafts.</li>
+  </ul>
+
+  <h2>Privacy</h2>
+  <p>The draft is saved in your browser&rsquo;s local storage so a refresh does not lose it. Nothing about your picks is sent anywhere. If analytics are enabled, the page reports three anonymous events: that a draft started, that a pick was recorded, and that a draft finished, with the scoring format and league size attached. No names, no rosters.</p>
+
+  <h2>Credits</h2>
+  <p>ADP from <a href="https://fantasyfootballcalculator.com/adp">Fantasy Football Calculator</a> and <a href="https://sleeper.com">Sleeper</a>. Projections by RotoWire, published through Sleeper. Injury reports from Sleeper. The method is the value-based drafting approach Joe Bryant described in the 1990s, with the wait gap replacing a fixed baseline. Made by <a href="https://colin.sh">Colin Sherrill</a>.</p>
+</main>
+<script>
+fetch("data/players.json").then(function (r) { return r.json(); }).then(function (d) {
+  var m = d.meta, a = m.sources.adp.formats;
+  function n(x) { return (x || 0).toLocaleString(); }
+  document.getElementById("adpDetail").textContent = "Fantasy Football Calculator: " + n(a.ppr.drafts) + " PPR drafts, " + n(a.half.drafts) + " half PPR, " + n(a.std.drafts) + " standard, from " + a.ppr.start + " to " + a.ppr.end + ", 12-team. Averaged with Sleeper's ADP for the same format where both exist. Built " + m.built.slice(0, 10) + ".";
+  document.getElementById("projDetail").textContent = "Full-season projections in all three formats for " + n(m.sources.projections.players) + " players. " + d.players.length + " players are on the board.";
+  document.getElementById("injDetail").textContent = n(m.sources.injuries.flagged) + " players on the board carry an injury designation as of the build.";
+});
+</script>
+</body>
+</html>

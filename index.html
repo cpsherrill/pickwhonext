@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pick Who Next: a second screen for your fantasy football snake draft</title>
+<meta name="description" content="Mark picks as they happen. It tells you who to take next, for your roster, in your scoring format. PPR, half PPR, or standard. No account, nothing to install.">
+<meta property="og:title" content="Pick Who Next">
+<meta property="og:description" content="A second screen for your fantasy football snake draft. Mark picks as they happen and it tells you who to take next.">
+<meta property="og:url" content="https://pickwhonext.com/">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f1a2b'/%3E%3Cpath d='M14 34l12 12 24-26' fill='none' stroke='%2334d399' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Analytics. Leave GA_ID empty and nothing loads. See DEPLOY.md.
+  window.GA_ID = "";
+  if (window.GA_ID) {
+    var s = document.createElement("script"); s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + window.GA_ID;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ dataLayer.push(arguments); };
+    gtag("js", new Date()); gtag("config", window.GA_ID, { anonymize_ip: true });
+  }
+</script>
+</head>
+<body>
+<a class="skip" href="#board">Skip to the board</a>
+<header class="top">
+  <div class="brand">
+    <a href="/" class="logo"><span class="mark"></span>Pick Who Next</a>
+    <span class="tag">snake drafts</span>
+  </div>
+  <nav class="topnav">
+    <a href="how.html">How it works</a>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section class="intro" id="intro">
+    <h1>Who should you take next?</h1>
+    <p>Mark picks as they come off the board. This page tells you who to take when your turn comes, adjusted for the roster you already have and your league&rsquo;s scoring. Nothing to install, no account, and the draft survives a refresh.</p>
+  </section>
+
+  <section class="panel settings" id="settings" aria-label="League settings">
+    <div class="row1">
+      <div class="seg" id="fmtSeg" role="group" aria-label="Scoring format">
+        <button data-fmt="ppr">PPR</button>
+        <button data-fmt="half">Half PPR</button>
+        <button data-fmt="std">Standard</button>
+      </div>
+      <label class="num">Teams <input id="teams" type="number" min="4" max="16" inputmode="numeric"></label>
+      <label class="num">Your slot <input id="slot" type="number" min="1" max="16" placeholder="?" inputmode="numeric"></label>
+      <button class="btn ghost" id="rosterBtn" aria-expanded="false" aria-controls="rosterCfg">Roster</button>
+      <button class="btn ghost danger" id="resetBtn">New draft</button>
+    </div>
+    <div class="rostercfg" id="rosterCfg" hidden>
+      <span class="cfgl">Starters</span>
+      <label>QB <input data-slot="QB" type="number" min="0" max="3"></label>
+      <label>RB <input data-slot="RB" type="number" min="0" max="4"></label>
+      <label>WR <input data-slot="WR" type="number" min="0" max="4"></label>
+      <label>TE <input data-slot="TE" type="number" min="0" max="3"></label>
+      <label>FLEX <input data-slot="FLEX" type="number" min="0" max="3"></label>
+      <label>K <input data-slot="K" type="number" min="0" max="1"></label>
+      <label>DEF <input data-slot="DEF" type="number" min="0" max="1"></label>
+      <span class="cfgl">Bench</span>
+      <label>BN <input data-slot="BN" type="number" min="0" max="10"></label>
+      <span class="cfgnote" id="cfgNote"></span>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="col main">
+      <div class="clockbar" id="clockBar">
+        <div class="clock"><span class="k">On the clock</span><b id="onClock">1.01</b><small id="overall">pick 1</small></div>
+        <div class="clock mine" id="clockMine"><span class="k">Your next pick</span><b id="yourTurn">set your slot</b><small id="yourAway"></small></div>
+        <div class="clockbtns">
+          <button class="btn ghost" id="undoBtn" title="Undo the last pick (Ctrl+Z)">Undo</button>
+        </div>
+      </div>
+
+      <div class="rec panel" id="rec" aria-live="polite">
+        <div class="reclabel">Take next</div>
+        <div id="recBody" class="recbody"><div class="muted">Loading the board&hellip;</div></div>
+      </div>
+
+      <div class="panel board" id="board">
+        <div class="toolbar">
+          <input id="search" type="search" placeholder="Search a player, team, or city" autocomplete="off" aria-label="Search players">
+          <div class="chips" id="chips">
+            <button class="chip active" data-pos="ALL">All</button>
+            <button class="chip" data-pos="QB">QB</button>
+            <button class="chip" data-pos="RB">RB</button>
+            <button class="chip" data-pos="WR">WR</button>
+            <button class="chip" data-pos="TE">TE</button>
+            <button class="chip" data-pos="K">K</button>
+            <button class="chip" data-pos="DEF">DEF</button>
+          </div>
+          <div class="seg small" id="sortSeg" role="group" aria-label="Sort">
+            <button data-sort="score" class="on">Best pick</button>
+            <button data-sort="value">Value</button>
+            <button data-sort="adp">ADP</button>
+            <button data-sort="proj">Points</button>
+          </div>
+        </div>
+        <div class="count" id="count"></div>
+        <div class="hdr">
+          <span class="h-pos">Pos</span><span class="h-name">Player</span><span class="h-bye">Bye</span><span class="h-adp">ADP</span><span class="h-proj">Proj</span><span class="h-val">Value</span><span class="h-act"></span>
+        </div>
+        <div id="list" class="list"></div>
+      </div>
+    </div>
+
+    <aside class="col side">
+      <div class="panel">
+        <div class="ptitle">Your roster <span id="rosterCount" class="muted"></span></div>
+        <div id="roster"></div>
+        <button class="btn ghost wide" id="finishBtn">Finish draft</button>
+      </div>
+      <div class="panel">
+        <div class="ptitle">Position runs</div>
+        <div id="cliffs"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">Recent picks</div>
+        <div id="log"></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="panel summary" id="summary" hidden>
+    <div class="ptitle">Your team</div>
+    <pre id="summaryText"></pre>
+    <div class="sumbtns">
+      <button class="btn" id="copyBtn">Copy</button>
+      <button class="btn ghost" id="closeSummary">Back to the board</button>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span id="footData">Data loading&hellip;</span>
+  <span>&middot; <a href="how.html">How the recommendation works</a></span>
+  <span>&middot; Snake drafts only. Nothing here leaves your browser.</span>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

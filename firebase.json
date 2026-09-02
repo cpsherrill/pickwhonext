@@ -1,0 +1,26 @@
+{
+  "hosting": {
+    "site": "pickwhonext",
+    "public": ".",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".firebase/**",
+      ".git/**",
+      "**/.git/**",
+      "**/.*",
+      "*.md",
+      "ideas/**",
+      "tools/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html|json)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      }
+    ]
+  }
+}
