@@ -106,9 +106,15 @@ button, input { font: inherit; color: inherit; }
 .empty { color: var(--muted); padding: 18px 8px; text-align: center; }
 
 @media (max-width: 640px) {
-  .hdr, .prow { grid-template-columns: 44px minmax(0, 1fr) 46px 46px 104px; }
-  .h-bye, .bye, .h-proj, .proj { display: none; }
-  .mini { padding: 4px 7px; font-size: 12px; }
+  .hdr, .prow { grid-template-columns: 40px minmax(0, 1fr) 44px 92px; gap: 6px; }
+  .h-bye, .bye, .h-proj, .proj, .h-val, .val { display: none; }
+  .prow { padding: 6px; }
+  .name { white-space: normal; font-size: 14px; line-height: 1.25; }
+  .name .sub { display: block; margin-top: 1px; }
+  .name .tm { margin-left: 0; }
+  .name .tag:first-of-type { margin-left: 6px; }
+  .mini { padding: 4px 6px; font-size: 12px; }
+  .acts { gap: 4px; }
   .intro h1 { font-size: 20px; }
 }
 

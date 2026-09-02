@@ -279,7 +279,7 @@
     var est = p._est[fmt()] ? '<span class="tag e" title="Projection estimated from ADP">~</span>' : "";
     return '<div class="prow' + (p === window._rec ? " rec" : "") + (isOut(p) ? " out" : "") + '" style="border-left-color:' + color(p.pos) + '" data-id="' + p.id + '">' +
       '<span class="pos" style="color:' + color(p.pos) + '">' + p.pos + "<small>" + p._posRank + "</small></span>" +
-      '<span class="name">' + esc(p.name) + '<span class="tm">' + esc(p.team) + "</span>" + tags + "</span>" +
+      '<span class="name">' + esc(p.name) + '<span class="sub"><span class="tm">' + esc(p.team) + "</span>" + tags + "</span></span>" +
       '<span class="bye">' + (p.bye || "") + "</span>" +
       '<span class="adp">' + n1(adp(p)) + "</span>" +
       '<span class="proj">' + est + Math.round(proj(p)) + "</span>" +
