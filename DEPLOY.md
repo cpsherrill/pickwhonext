@@ -32,7 +32,12 @@ In the Route 53 hosted zone for pickwhonext.com:
 Then console → Hosting → Add custom domain → `pickwhonext.com`, or the
 REST call from ../jokejudge/DEPLOY.md with the project and site swapped.
 
-## Analytics
+## Analytics and Ads
+
+`index.html` also carries `AW_ID` (the Google Ads tag, `AW-18428685436`)
+and `AW_LABEL` (the conversion label for Draft completed). With both set,
+finishing a draft sends a `conversion` event to Ads directly, no
+Analytics in between. One gtag.js load serves both IDs.
 
 `index.html` has `window.GA_ID = ""`. Nothing loads until it is set.
 To turn it on: create a GA4 property (analytics.google.com → Admin →

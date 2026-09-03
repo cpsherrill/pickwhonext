@@ -380,7 +380,11 @@
   }
   function finish(auto) {
     var R = buildRoster();
-    if (!S.done) { S.done = true; save(); track("draft_completed", { format: fmt(), teams: teams(), picks: S.picks.length, mine: R.mine.length, auto: !!auto }); }
+    if (!S.done) {
+      S.done = true; save();
+      track("draft_completed", { format: fmt(), teams: teams(), picks: S.picks.length, mine: R.mine.length, auto: !!auto });
+      if (window.AW_ID && window.AW_LABEL) track("conversion", { send_to: window.AW_ID + "/" + window.AW_LABEL });
+    }
     var lines = ["My team (" + FMT_LABEL[fmt()] + ", " + teams() + " teams, pickwhonext.com)", ""];
     R.slots.forEach(function (s) { lines.push((s.slot + "    ").slice(0, 5) + (s.p ? s.p.name + " (" + s.p.team + ")" : "open")); });
     R.bench.forEach(function (p) { lines.push("BN   " + p.name + " (" + p.pos + ", " + p.team + ")"); });
