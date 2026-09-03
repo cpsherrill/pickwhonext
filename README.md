@@ -52,3 +52,8 @@ has a projection in all three formats.
 ## Deploy
 
 Firebase Hosting, project `pickwhonext`. See DEPLOY.md.
+
+## License
+
+MIT. Source at https://github.com/cpsherrill/pickwhonext. The data feeds
+belong to their publishers; see the credits on /how.

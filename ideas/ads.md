@@ -1,5 +1,11 @@
 # Google Ads: the 2026 campaign
 
+> Status 2026-09-03: the Analytics route below did not work this year.
+> Neither GA4 property processed a hit in its first day, so the
+> conversion is measured with the Ads tag directly (`AW_ID` and
+> `AW_LABEL` in index.html). Ads had to be unlinked from Analytics for
+> the manual conversion path to appear. Everything else here held up.
+
 The experiment: does a paid click turn into a finished draft, and what
 does one cost. Small budget, one Search campaign, five days. Written
 2026-09-02; reuse next August with the dates moved.
