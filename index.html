@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pick Who Next: a second screen for your fantasy football snake draft</title>
-<meta name="description" content="Mark picks as they happen. It tells you who to take next, for your roster, in your scoring format. PPR, half PPR, or standard. No account, nothing to install.">
+<title>Pick Who Next: a second screen for your fantasy football draft</title>
+<meta name="description" content="Mark picks as they happen. It tells you who to take next, for your roster, in your scoring format. PPR, half PPR, or standard. Snake, linear, or third-round reversal. No account, nothing to install.">
 <meta property="og:title" content="Pick Who Next">
-<meta property="og:description" content="A second screen for your fantasy football snake draft. Mark picks as they happen and it tells you who to take next.">
+<meta property="og:description" content="A second screen for your fantasy football draft. Mark picks as they happen and it tells you who to take next.">
 <meta property="og:url" content="https://pickwhonext.com/">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f1a2b'/%3E%3Cpath d='M14 34l12 12 24-26' fill='none' stroke='%2334d399' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -35,7 +35,7 @@
 <header class="top">
   <div class="brand">
     <a href="/" class="logo"><span class="mark"></span>Pick Who Next</a>
-    <span class="tag">snake drafts</span>
+    <span class="tag">snake or linear</span>
   </div>
   <nav class="topnav">
     <a href="how.html">How it works</a>
@@ -55,9 +55,15 @@
         <button data-fmt="half">Half PPR</button>
         <button data-fmt="std">Standard</button>
       </div>
+      <div class="seg" id="orderSeg" role="group" aria-label="Draft order">
+        <button data-order="snake">Snake</button>
+        <button data-order="linear">Linear</button>
+        <button data-order="3rr" title="Third-round reversal: rounds two and three both run backward, then it alternates">3RR</button>
+      </div>
       <label class="num">Teams <input id="teams" type="number" min="4" max="16" inputmode="numeric"></label>
       <label class="num">Your slot <input id="slot" type="number" min="1" max="16" placeholder="?" inputmode="numeric"></label>
       <button class="btn ghost" id="rosterBtn" aria-expanded="false" aria-controls="rosterCfg">Roster</button>
+      <span class="rsum" id="rosterSummary" title="Click to change the roster shape"></span>
       <button class="btn ghost danger" id="resetBtn">New draft</button>
     </div>
     <div class="rostercfg" id="rosterCfg" hidden>
@@ -67,6 +73,7 @@
       <label>WR <input data-slot="WR" type="number" min="0" max="4"></label>
       <label>TE <input data-slot="TE" type="number" min="0" max="3"></label>
       <label>FLEX <input data-slot="FLEX" type="number" min="0" max="3"></label>
+      <label title="Superflex: QB, RB, WR, or TE">SFLEX <input data-slot="SFLEX" type="number" min="0" max="2"></label>
       <label>K <input data-slot="K" type="number" min="0" max="1"></label>
       <label>DEF <input data-slot="DEF" type="number" min="0" max="1"></label>
       <span class="cfgl">Bench</span>
@@ -147,7 +154,7 @@
 <footer class="foot">
   <span id="footData">Data loading&hellip;</span>
   <span>&middot; <a href="how.html">How the recommendation works</a></span>
-  <span>&middot; Snake drafts only. Nothing here leaves your browser.</span>
+  <span>&middot; Snake, linear, or third-round reversal. No auctions. Nothing here leaves your browser.</span>
 </footer>
 <script src="app.js"></script>
 </body>

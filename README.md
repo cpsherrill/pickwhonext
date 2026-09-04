@@ -1,8 +1,8 @@
 # pickwhonext
 
-> Who should you take next? A second screen for a fantasy football snake
-> draft. Mark picks as they happen; it names the player to take, for your
-> roster, in your scoring format.
+> Who should you take next? A second screen for a fantasy football draft
+> (snake, linear, or third-round reversal). Mark picks as they happen; it
+> names the player to take, for your roster, in your scoring format.
 
 A tool, played completely straight (sibling in shape to ../jokejudge and
 the rest of the family: static, no build, vanilla JS, Firebase Hosting).
@@ -37,7 +37,8 @@ has a projection in all three formats.
 - **index.html / style.css**: the board. Settings, the snake clock, the
   recommendation card, the player list, roster, position runs, recent
   picks, and the finished-team summary.
-- **app.js**: the engine. Scoring-format switch (ADP and projections are
+- **app.js**: the engine. Draft order (snake, linear, third-round
+  reversal), configurable roster slots including superflex, scoring-format switch (ADP and projections are
   both per format), points-above-replacement value, the wait gap (what
   you lose at a position by waiting one turn, using the clock), the
   roster-need multiplier, tiers by projection gaps, search by name, team

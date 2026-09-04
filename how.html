@@ -18,8 +18,8 @@
   <p class="lede">Everything the tool knows, where it came from, and exactly what it does with it. If a recommendation ever looks wrong, this page should explain why it said what it said.</p>
 
   <h2>What the tool is</h2>
-  <p>A second screen for a snake draft. You keep the draft running wherever it runs (ESPN, Yahoo, Sleeper, a whiteboard) and mark picks here as they happen. When your turn comes, the top of the page names the player it would take, with the reasoning next to the name. It works for one team: yours. It does not know who the other teams have, only who is gone.</p>
-  <p>It does not do auction drafts. Auction value depends on every team&rsquo;s remaining budget and who has been nominated, and that state lives inside the platform. A snake draft needs only a list and a pen.</p>
+  <p>A second screen for a draft that goes in rounds: snake, linear, or third-round reversal. You keep the draft running wherever it runs (ESPN, Yahoo, Sleeper, a whiteboard) and mark picks here as they happen. When your turn comes, the top of the page names the player it would take, with the reasoning next to the name. It works for one team: yours. It does not know who the other teams have, only who is gone.</p>
+  <p>It does not do auction drafts. Auction value depends on every team&rsquo;s remaining budget and who has been nominated, and that state lives inside the platform. A draft that goes in rounds needs only a list and a pen.</p>
 
   <h2>The data</h2>
   <table id="dataTable">
@@ -37,7 +37,7 @@
 
   <h2>Value: points above replacement</h2>
   <p>The <b>Value</b> column is the player&rsquo;s projected points minus the projected points of the <b>replacement player</b> at that position: the last starter in your league. In a 12-team league with two running back slots and one flex, the tool expects about 30 running backs to start (24 in RB slots, plus half of the 12 flex slots), so the replacement running back is the 30th best by projection. For quarterbacks it is the 12th. This is why a quarterback projected for 360 points can be worth less than a running back projected for 280: the 12th quarterback is still very good, and the 30th running back is not.</p>
-  <p>The flex share is fixed: half of flex slots go to running backs, four tenths to receivers, one tenth to tight ends. Replacement level is computed once from the full pool and does not move during the draft. That keeps the Value column stable, so a player&rsquo;s number means the same thing in round two and round nine.</p>
+  <p>The flex share is fixed: half of flex slots go to running backs, four tenths to receivers, one tenth to tight ends. A superflex slot, if your league has one, counts mostly toward quarterbacks: eight tenths of superflex slots go to quarterbacks, one tenth each to running backs and receivers. That is why a two-quarterback league makes quarterbacks scarce, which is the point of a two-quarterback league. Replacement level is computed once from the full pool and does not move during the draft. That keeps the Value column stable, so a player&rsquo;s number means the same thing in round two and round nine.</p>
 
   <h2>The recommendation</h2>
   <p>The player named at the top of the board is the one with the highest <b>score</b>. The score has three parts.</p>
@@ -48,6 +48,7 @@
     <tr><th>Where the player would land</th><th>Multiplier</th></tr>
     <tr><td>An open starting slot at their position</td><td>1.0</td></tr>
     <tr><td>An open flex slot (RB, WR, TE)</td><td>0.85</td></tr>
+    <tr><td>An open superflex slot (QB, RB, WR, TE)</td><td>0.85</td></tr>
     <tr><td>The bench, for a running back or receiver</td><td>0.5</td></tr>
     <tr><td>The bench, for a quarterback or tight end</td><td>0.35</td></tr>
     <tr><td>A kicker or defense while any other starting slot is open</td><td>0.25</td></tr>
@@ -61,7 +62,7 @@
   <p>Within each position, players are sorted by projection, and a new tier begins wherever the drop to the next player is more than six percent of the previous player&rsquo;s points, or eight points, whichever is larger. The <b>Position runs</b> panel counts how many players are left in the top remaining tier and the size of the drop after them. When that count reaches two, the note turns yellow. That is the moment a run at the position is about to cost you.</p>
 
   <h2>The clock</h2>
-  <p>A snake draft reverses direction every round. Given the number of teams and your slot, the tool knows every pick number that is yours, and shows the next one and how many picks away it is. The overall pick number is simply how many picks have been marked plus one, so the clock is only as accurate as your marking. If you fall behind, mark the missing picks and it catches up. Undo takes back the last one.</p>
+  <p>Three draft orders are supported. A snake draft reverses direction every round. A linear draft runs the same direction every round, so the first slot picks first every time. Third-round reversal is a snake draft where round three runs the same direction as round two, and the alternation continues from there, which softens the advantage of the first slot. Auction drafts are not supported. Given the order, the number of teams, and your slot, the tool knows every pick number that is yours, and shows the next one and how many picks away it is. The overall pick number is simply how many picks have been marked plus one, so the clock is only as accurate as your marking. If you fall behind, mark the missing picks and it catches up. Undo takes back the last one.</p>
 
   <h2>What it does not know</h2>
   <ul>

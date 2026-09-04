@@ -8,14 +8,17 @@
   var POS = ["QB", "RB", "WR", "TE", "K", "DEF"];
   var FLEX_POS = ["RB", "WR", "TE"];
   var FLEX_SHARE = { RB: 0.5, WR: 0.4, TE: 0.1 };
+  var SFLEX_POS = ["QB", "RB", "WR", "TE"];          // superflex
+  var SFLEX_SHARE = { QB: 0.8, RB: 0.1, WR: 0.1, TE: 0 };
+  var ORDER_LABEL = { snake: "Snake", linear: "Linear", "3rr": "Third-round reversal" };
   var FMT_LABEL = { ppr: "PPR", half: "Half PPR", std: "Standard" };
   var OUT = { Out: 1, IR: 1, PUP: 1, Sus: 1, DNR: 1, NA: 1, Doubtful: 1 };
   var STORE = "pickwhonext.v1";
   var WAIT_MARGIN = 2;      // a player is "likely there next turn" if ADP > next pick + this
   var VALUE_NUDGE = 0.15;   // score = wait gap + nudge * value
   var DEFAULTS = {
-    teams: 12, slot: 0, fmt: "ppr",
-    roster: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, K: 1, DEF: 1, BN: 6 },
+    teams: 12, slot: 0, fmt: "ppr", order: "snake",
+    roster: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, SFLEX: 0, K: 1, DEF: 1, BN: 6 },
     hideKD: true
   };
 
@@ -80,10 +83,11 @@
 
   /* ---------- league math ---------- */
   function teams() { return S.settings.teams; }
-  function rosterSize() { var r = S.settings.roster; return POS.reduce(function (n, p) { return n + (r[p] || 0); }, 0) + (r.FLEX || 0) + (r.BN || 0); }
+  function rosterSize() { var r = S.settings.roster; return POS.reduce(function (n, p) { return n + (r[p] || 0); }, 0) + (r.FLEX || 0) + (r.SFLEX || 0) + (r.BN || 0); }
   function startersAt(pos) {
     var r = S.settings.roster, n = teams() * (r[pos] || 0);
     if (FLEX_POS.indexOf(pos) >= 0) n += teams() * (r.FLEX || 0) * FLEX_SHARE[pos];
+    if (SFLEX_POS.indexOf(pos) >= 0) n += teams() * (r.SFLEX || 0) * SFLEX_SHARE[pos];
     return Math.max(1, Math.round(n));
   }
   // Static replacement level: the projected points of the last starter at each
@@ -99,13 +103,22 @@
   }
   function value(p, repl) { return proj(p) - repl[p.pos]; }
 
-  // Snake clock. Overall pick numbers are 1-based.
+  // The clock. Overall pick numbers are 1-based. A round runs forward or
+  // reversed depending on the draft order: snake alternates, linear never
+  // reverses, third-round reversal runs 1 forward, 2 and 3 reversed, then
+  // alternates from there.
   function pickLabel(o) { var T = teams(), rd = Math.ceil(o / T), i = ((o - 1) % T) + 1; return rd + "." + (i < 10 ? "0" : "") + i; }
+  function roundReversed(r) {
+    var o = S.settings.order;
+    if (o === "linear") return false;
+    if (o === "3rr") return r === 2 || (r >= 3 && r % 2 === 1);
+    return r % 2 === 0;
+  }
   function myPicks() {
     var T = teams(), s = S.settings.slot, out = [];
     if (!(s >= 1 && s <= T)) return out;
     var rounds = rosterSize();
-    for (var r = 1; r <= rounds; r++) out.push((r % 2 === 1) ? (r - 1) * T + s : (r - 1) * T + (T - s + 1));
+    for (var r = 1; r <= rounds; r++) out.push(roundReversed(r) ? (r - 1) * T + (T - s + 1) : (r - 1) * T + s);
     return out;
   }
   function currentPick() { return S.picks.length + 1; }
@@ -114,7 +127,7 @@
   /* ---------- roster ---------- */
   function slotList() {
     var r = S.settings.roster, slots = [];
-    ["QB", "RB", "WR", "TE", "FLEX", "K", "DEF"].forEach(function (s) { for (var i = 0; i < (r[s] || 0); i++) slots.push({ slot: s, p: null }); });
+    ["QB", "RB", "WR", "TE", "FLEX", "SFLEX", "K", "DEF"].forEach(function (s) { for (var i = 0; i < (r[s] || 0); i++) slots.push({ slot: s, p: null }); });
     return slots;
   }
   function buildRoster() {
@@ -124,31 +137,34 @@
       var placed = false, i;
       for (i = 0; i < slots.length; i++) if (!slots[i].p && slots[i].slot === p.pos) { slots[i].p = p; placed = true; break; }
       if (!placed && FLEX_POS.indexOf(p.pos) >= 0) for (i = 0; i < slots.length; i++) if (!slots[i].p && slots[i].slot === "FLEX") { slots[i].p = p; placed = true; break; }
+      if (!placed && SFLEX_POS.indexOf(p.pos) >= 0) for (i = 0; i < slots.length; i++) if (!slots[i].p && slots[i].slot === "SFLEX") { slots[i].p = p; placed = true; break; }
       if (!placed) (bench.length < BN ? bench : overflow).push(p);
     });
     return { slots: slots, bench: bench, overflow: overflow, mine: mine };
   }
   function openSlots(R) {
-    var open = { QB: 0, RB: 0, WR: 0, TE: 0, FLEX: 0, K: 0, DEF: 0 };
+    var open = { QB: 0, RB: 0, WR: 0, TE: 0, FLEX: 0, SFLEX: 0, K: 0, DEF: 0 };
     R.slots.forEach(function (s) { if (!s.p) open[s.slot]++; });
     open.BN = Math.max(0, (S.settings.roster.BN || 0) - R.bench.length);
     return open;
   }
   // The roster-need multiplier. Explained on /how.
   function needMult(pos, open) {
-    var otherStartersOpen = ["QB", "RB", "WR", "TE", "FLEX"].some(function (s) { return open[s] > 0; });
+    var otherStartersOpen = ["QB", "RB", "WR", "TE", "FLEX", "SFLEX"].some(function (s) { return open[s] > 0; });
     if (pos === "K" || pos === "DEF") {
       if (open[pos] > 0) return otherStartersOpen ? 0.25 : 1.0;
       return 0.05;
     }
     if (open[pos] > 0) return 1.0;
     if (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0) return 0.85;
+    if (SFLEX_POS.indexOf(pos) >= 0 && open.SFLEX > 0) return 0.85;
     if (open.BN > 0) return (pos === "RB" || pos === "WR") ? 0.5 : 0.35;
     return 0.05;
   }
   function needWord(pos, open) {
     if (open[pos] > 0) return "an open " + pos + " slot";
     if (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0) return "an open FLEX slot";
+    if (SFLEX_POS.indexOf(pos) >= 0 && open.SFLEX > 0) return "an open superflex slot";
     if (open.BN > 0) return "bench depth at " + pos;
     return "no room at " + pos;
   }
@@ -225,9 +241,13 @@
   function renderSettings() {
     var s = S.settings;
     document.querySelectorAll("#fmtSeg button").forEach(function (b) { b.classList.toggle("on", b.dataset.fmt === s.fmt); });
+    document.querySelectorAll("#orderSeg button").forEach(function (b) { b.classList.toggle("on", b.dataset.order === s.order); });
+    var shape = [];
+    ["QB", "RB", "WR", "TE", "FLEX", "SFLEX", "K", "DEF"].forEach(function (k) { for (var i = 0; i < (s.roster[k] || 0); i++) shape.push(k); });
+    $("rosterSummary").textContent = shape.join(" ") + (s.roster.BN ? " + " + s.roster.BN + " bench" : "");
     $("teams").value = s.teams; $("slot").value = s.slot || "";
     document.querySelectorAll("#rosterCfg input").forEach(function (i) { i.value = s.roster[i.dataset.slot]; });
-    $("cfgNote").textContent = rosterSize() + " roster spots, " + rosterSize() + " rounds. Value is measured against the last starter at each position in a " + s.teams + "-team league.";
+    $("cfgNote").textContent = rosterSize() + " roster spots, " + rosterSize() + " rounds, " + ORDER_LABEL[s.order].toLowerCase() + " order. Value is measured against the last starter at each position in a " + s.teams + "-team league. SFLEX is a superflex slot: QB, RB, WR, or TE.";
   }
 
   function renderClock(ctx) {
@@ -359,7 +379,7 @@
     document.querySelectorAll(".chip[data-pos]").forEach(function (c) {
       var pos = c.dataset.pos, need = false;
       if (pos === "ALL") return;
-      need = open[pos] > 0 || (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0);
+      need = open[pos] > 0 || (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0) || (SFLEX_POS.indexOf(pos) >= 0 && open.SFLEX > 0);
       c.classList.toggle("needed", need && started);
     });
   }
@@ -370,7 +390,7 @@
     var first = !S.picks.length;
     S.picks.push({ id: id, mine: !!mine });
     save(); render();
-    if (first) track("draft_started", { format: fmt(), teams: teams(), slot: S.settings.slot || 0 });
+    if (first) track("draft_started", { format: fmt(), teams: teams(), slot: S.settings.slot || 0, order: S.settings.order });
     if (mine) track("pick_recorded", { format: fmt(), pos: BYID[id].pos, round: Math.ceil((S.picks.length) / teams()) });
   }
   function undo() { if (S.picks.pop()) { S.done = false; save(); render(); } }
@@ -385,7 +405,7 @@
       track("draft_completed", { format: fmt(), teams: teams(), picks: S.picks.length, mine: R.mine.length, auto: !!auto });
       if (window.AW_ID && window.AW_LABEL) track("conversion", { send_to: window.AW_ID + "/" + window.AW_LABEL });
     }
-    var lines = ["My team (" + FMT_LABEL[fmt()] + ", " + teams() + " teams, pickwhonext.com)", ""];
+    var lines = ["My team (" + FMT_LABEL[fmt()] + ", " + teams() + " teams, " + ORDER_LABEL[S.settings.order].toLowerCase() + ", pickwhonext.com)", ""];
     R.slots.forEach(function (s) { lines.push((s.slot + "    ").slice(0, 5) + (s.p ? s.p.name + " (" + s.p.team + ")" : "open")); });
     R.bench.forEach(function (p) { lines.push("BN   " + p.name + " (" + p.pos + ", " + p.team + ")"); });
     var total = R.slots.reduce(function (n, s) { return n + (s.p ? proj(s.p) : 0); }, 0);
@@ -414,6 +434,11 @@
     document.querySelectorAll("#sortSeg button").forEach(function (x) { x.classList.toggle("on", x === b); });
     render();
   });
+  $("orderSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    S.settings.order = b.dataset.order; save(); render();
+  });
+  $("rosterSummary").addEventListener("click", function () { $("rosterBtn").click(); });
   $("fmtSeg").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
     S.settings.fmt = b.dataset.fmt; save(); tierize(); render();

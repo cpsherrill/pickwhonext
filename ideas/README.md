@@ -16,6 +16,14 @@ the way; the backlog is things that would make it get further out of it.
 - The methodology page, verbose on purpose.
 - Finished-team summary with projected starter points, copyable.
 
+## Shipped 2026-09-04, from the original author's notes
+
+- Draft order: snake, linear, or third-round reversal.
+- Superflex slot (QB, RB, WR, TE) with its own share of replacement
+  level. Two-quarterback leagues now price quarterbacks correctly.
+- The roster shape is printed next to the Roster button, because the
+  original author did not find the button. That was the feature request.
+
 ## Next
 
 - **Live draft sync.** Sleeper has a public read-only API for draft
