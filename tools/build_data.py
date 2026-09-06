@@ -87,6 +87,12 @@ def main():
         if not p.get('active') or not p.get('team'):
             continue
         by_key.setdefault((norm(p.get('full_name') or ''), pos), []).append(pid)
+    # Two-way players (Travis Hunter is DB with fantasy_positions DB and WR)
+    # are indexed under every fantasy position Sleeper grants them.
+    for pid, p in players.items():
+        for fp in (p.get('fantasy_positions') or []):
+            if fp in POS and fp != p.get('position') and p.get('active') and p.get('team'):
+                by_key.setdefault((norm(p.get('full_name') or ''), fp), []).append(pid)
 
     def find(name, pos, tm):
         if pos == 'DEF':
@@ -100,6 +106,7 @@ def main():
     # --- FFC ADP, keyed by Sleeper id -----------------------------------
     adp = {}       # pid -> {fmt: adp}
     adp_n = {}     # pid -> {fmt: times_drafted}
+    ffc_pos = {}   # pid -> position the ADP feed drafts them at
     bye_by_team = {}
     unmatched = []
     for fmt, d in ffc.items():
@@ -113,6 +120,7 @@ def main():
                 unmatched.append((fmt, row['name'], pos, tm))
                 continue
             adp.setdefault(pid, {})[fmt] = row['adp']
+            ffc_pos[pid] = pos
             adp_n.setdefault(pid, {})[fmt] = row.get('times_drafted')
 
     # --- Sleeper projections + ADP --------------------------------------
@@ -136,9 +144,12 @@ def main():
         p = players.get(pid)
         if not p:
             continue
-        pos = p.get('position')
+        pos = ffc_pos.get(pid) or p.get('position')
         if pos not in POS:
-            continue
+            fps = [x for x in (p.get('fantasy_positions') or []) if x in POS]
+            if not fps:
+                continue
+            pos = fps[0]
         tm = pid if pos == 'DEF' else team(p.get('team'))
         blended = {}
         for fmt in FORMATS:
