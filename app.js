@@ -12,10 +12,15 @@
   var SFLEX_SHARE = { QB: 0.8, RB: 0.1, WR: 0.1, TE: 0 };
   var ORDER_LABEL = { snake: "Snake", linear: "Linear", "3rr": "Third-round reversal" };
   var FMT_LABEL = { ppr: "PPR", half: "Half PPR", std: "Standard" };
-  var OUT = { Out: 1, IR: 1, PUP: 1, Sus: 1, DNR: 1, NA: 1, Doubtful: 1 };
+  // Season-long designations: never recommended. Week-to-week ones (Out,
+  // Doubtful, Questionable) only take a haircut, since a draft is for the
+  // season and a player out this Thursday is still a player.
+  var OUT = { IR: 1, PUP: 1, Sus: 1, DNR: 1, NA: 1 };
+  var HAIRCUT = { Questionable: 0.95, Doubtful: 0.85, Out: 0.85 };
   var STORE = "pickwhonext.v1";
   var WAIT_MARGIN = 2;      // a player is "likely there next turn" if ADP > next pick + this
-  var VALUE_NUDGE = 0.15;   // score = wait gap + nudge * value
+  var VALUE_NUDGE = 0.15;   // score = wait gap + nudge * value + floor
+  var FLOOR = 3;            // times proj / replacement: so nobody scores zero and equals sort by quality
   var DEFAULTS = {
     teams: 12, slot: 0, fmt: "ppr", order: "snake",
     roster: { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, SFLEX: 0, K: 1, DEF: 1, BN: 6 },
@@ -148,20 +153,32 @@
     open.BN = Math.max(0, (S.settings.roster.BN || 0) - R.bench.length);
     return open;
   }
-  // The roster-need multiplier. Explained on /how.
-  function needMult(pos, open) {
-    var otherStartersOpen = ["QB", "RB", "WR", "TE", "FLEX", "SFLEX"].some(function (s) { return open[s] > 0; });
+  // The roster-need multiplier. Explained on /how. `left` is how many
+  // roster spots you still have to fill, including this pick.
+  function needMult(pos, open, left, have) {
     if (pos === "K" || pos === "DEF") {
-      if (open[pos] > 0) return otherStartersOpen ? 0.25 : 1.0;
-      return 0.05;
+      // Kickers and defenses are interchangeable and streamable, and their
+      // projections are the least reliable on the board. They are never
+      // recommended for the bench, and never recommended for a starting
+      // slot until your remaining picks are exactly your open K and DEF
+      // slots: the last rounds, where they belong. Zero, not a weight,
+      // because any weight loses to a wasteland bench eventually.
+      if (open[pos] <= 0) return 0;
+      return left <= open.K + open.DEF ? 1.0 : 0;
     }
     if (open[pos] > 0) return 1.0;
-    if (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0) return 0.85;
-    if (SFLEX_POS.indexOf(pos) >= 0 && open.SFLEX > 0) return 0.85;
-    if (open.BN > 0) return (pos === "RB" || pos === "WR") ? 0.5 : 0.35;
+    if (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0) return pos === "TE" ? 0.5 : 0.85;
+    if (SFLEX_POS.indexOf(pos) >= 0 && open.SFLEX > 0) return pos === "TE" ? 0.5 : 0.85;
+    if (open.BN > 0) {
+      if (pos === "RB" || pos === "WR") return 0.4;
+      // One backup quarterback or tight end is depth. A second is a wasted pick.
+      var starters = (S.settings.roster[pos] || 0) + (pos === "QB" ? (S.settings.roster.SFLEX || 0) : 0);
+      return (have[pos] || 0) > starters ? 0.05 : 0.2;
+    }
     return 0.05;
   }
-  function needWord(pos, open) {
+  function needWord(pos, open, left) {
+    if ((pos === "K" || pos === "DEF") && open[pos] > 0 && left <= open.K + open.DEF) return "an open " + pos + " slot and nothing else left to fill";
     if (open[pos] > 0) return "an open " + pos + " slot";
     if (FLEX_POS.indexOf(pos) >= 0 && open.FLEX > 0) return "an open FLEX slot";
     if (SFLEX_POS.indexOf(pos) >= 0 && open.SFLEX > 0) return "an open superflex slot";
@@ -174,6 +191,8 @@
 
   function scoreBoard(avail, R) {
     var repl = replacementStatic(), open = openSlots(R);
+    var left = Math.max(1, rosterSize() - R.mine.length);
+    var have = {}; R.mine.forEach(function (p) { have[p.pos] = (have[p.pos] || 0) + 1; });
     var cur = currentPick(), nxt = nextMine(cur);
     var waitRepl = {}, waitWho = {};
     POS.forEach(function (pos) {
@@ -187,12 +206,12 @@
     avail.forEach(function (p) {
       p._value = value(p, repl);
       p._gap = proj(p) - waitRepl[p.pos];
-      p._need = needMult(p.pos, open);
-      var base = Math.max(0, p._gap) + VALUE_NUDGE * Math.max(0, p._value);
-      if (isQ(p)) base *= 0.95;
+      p._need = needMult(p.pos, open, left, have);
+      var base = Math.max(0, p._gap) + VALUE_NUDGE * Math.max(0, p._value) + FLOOR * (repl[p.pos] > 0 ? proj(p) / repl[p.pos] : 0);
+      if (isQ(p)) base *= (HAIRCUT[p.inj.status] || 0.95);
       p._score = isOut(p) ? -1 : base * p._need;
     });
-    return { repl: repl, waitRepl: waitRepl, waitWho: waitWho, open: open, nxt: nxt, cur: cur };
+    return { repl: repl, waitRepl: waitRepl, waitWho: waitWho, open: open, left: left, nxt: nxt, cur: cur };
   }
 
   /* ---------- tiers and runs ---------- */
@@ -277,7 +296,7 @@
     } else {
       why += "Projected " + esc(n1(proj(best))) + " points, " + esc(n1(best._value)) + " above the last starter at " + best.pos + ". Set your slot and the clock will also weigh who survives to your next turn. ";
     }
-    why += '<span class="muted">You have ' + esc(needWord(best.pos, ctx.open)) + ".";
+    why += '<span class="muted">You have ' + esc(needWord(best.pos, ctx.open, ctx.left)) + ".";
     if (isQ(best)) why += " Listed " + esc(best.inj.status.toLowerCase()) + (best.inj.part ? " (" + esc(best.inj.part.toLowerCase()) + ")" : "") + ".";
     if (best.bye) why += " Bye week " + best.bye + ".";
     why += "</span>";
@@ -294,7 +313,7 @@
     var tags = "";
     if (p.rookie) tags += '<span class="tag r" title="Rookie">R</span>';
     if (isOut(p)) tags += '<span class="tag o" title="' + esc(p.inj.status) + (p.inj.part ? ", " + esc(p.inj.part) : "") + '">' + esc(p.inj.status.toUpperCase()) + "</span>";
-    else if (isQ(p)) tags += '<span class="tag q" title="' + esc(p.inj.status) + (p.inj.part ? ", " + esc(p.inj.part) : "") + '">Q</span>';
+    else if (isQ(p)) tags += '<span class="tag q" title="' + esc(p.inj.status) + (p.inj.part ? ", " + esc(p.inj.part) : "") + ' this week">' + (p.inj.status === "Questionable" ? "Q" : p.inj.status === "Doubtful" ? "D" : "OUT") + "</span>";
     tags += '<span class="tag t" title="Tier ' + p._tier + " at " + p.pos + '">T' + p._tier + "</span>";
     var est = p._est[fmt()] ? '<span class="tag e" title="Projection estimated from ADP">~</span>' : "";
     return '<div class="prow' + (p === window._rec ? " rec" : "") + (isOut(p) ? " out" : "") + '" style="border-left-color:' + color(p.pos) + '" data-id="' + p.id + '">' +

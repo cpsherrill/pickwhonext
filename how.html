@@ -42,21 +42,24 @@
   <h2>The recommendation</h2>
   <p>The player named at the top of the board is the one with the highest <b>score</b>. The score has three parts.</p>
   <p><b>1. The wait gap.</b> For each position, the tool finds the best player still on the board who is likely to survive until your next pick, meaning their ADP is later than your next pick number plus a small margin of two. A player&rsquo;s wait gap is their projection minus that survivor&rsquo;s projection: what you lose at this position by waiting one turn. This is the core of the method, and it is why the tool needs your draft slot. Two players with equal wait gaps are equally urgent even if one is a star and one is a tight end, because taking the star now and the tight end later leaves you with the same total as the other way round. If your slot is not set, the wait gap falls back to the Value column.</p>
-  <p><b>2. A nudge toward value.</b> Fifteen percent of the player&rsquo;s Value is added, so that ties between equally urgent players break toward the better player overall.</p>
+  <p><b>2. A nudge toward value, and a floor.</b> Fifteen percent of the player&rsquo;s Value is added, so that ties between equally urgent players break toward the better player overall. A small floor is added too: three points times the player&rsquo;s projection divided by the replacement level at their position. It exists for the picks where the wait gap is zero for everyone, which happens at the turn in a snake draft, when your next pick is one away and every player will still be there. Without it, every candidate scored zero and the recommendation was whoever happened to sort first. With it, equally urgent players sort by how good they are relative to their position.</p>
   <p><b>3. The roster-need multiplier.</b> The sum is multiplied by a factor that depends on where the player would go on your roster.</p>
   <table>
     <tr><th>Where the player would land</th><th>Multiplier</th></tr>
     <tr><td>An open starting slot at their position</td><td>1.0</td></tr>
-    <tr><td>An open flex slot (RB, WR, TE)</td><td>0.85</td></tr>
-    <tr><td>An open superflex slot (QB, RB, WR, TE)</td><td>0.85</td></tr>
-    <tr><td>The bench, for a running back or receiver</td><td>0.5</td></tr>
-    <tr><td>The bench, for a quarterback or tight end</td><td>0.35</td></tr>
-    <tr><td>A kicker or defense while any other starting slot is open</td><td>0.25</td></tr>
-    <tr><td>A kicker or defense once your other starters are set</td><td>1.0</td></tr>
+    <tr><td>An open flex slot, for a running back or receiver</td><td>0.85</td></tr>
+    <tr><td>An open flex slot, for a tight end</td><td>0.5</td></tr>
+    <tr><td>An open superflex slot (QB, RB, WR, TE)</td><td>0.85, or 0.5 for a tight end</td></tr>
+    <tr><td>The bench, for a running back or receiver</td><td>0.4</td></tr>
+    <tr><td>The bench, for a first backup quarterback or tight end</td><td>0.2</td></tr>
+    <tr><td>The bench, for a second backup quarterback or tight end</td><td>0.05</td></tr>
+    <tr><td>A kicker or defense while you still have other spots to fill, bench included</td><td>0, never recommended</td></tr>
+    <tr><td>A kicker or defense when your remaining picks are exactly your open kicker and defense slots</td><td>1.0</td></tr>
+    <tr><td>A second kicker or defense for the bench</td><td>0, never recommended</td></tr>
     <tr><td>No room at all</td><td>0.05</td></tr>
   </table>
-  <p>The multiplier is what stops the tool from recommending a fifth running back for your bench when you have no tight end, and what keeps kickers out of round four. It is a blunt instrument on purpose. A draft is not the time for a subtle one.</p>
-  <p>Players listed as out, on injured reserve, on the physically-unable-to-perform list, or suspended are never recommended, though they stay on the board with a red tag in case you want them anyway. Players listed as questionable lose five percent of their score and carry a yellow tag.</p>
+  <p>The multiplier is what stops the tool from recommending a fifth running back for your bench when you have no tight end, and what keeps kickers and defenses out of the middle rounds. Those two positions are interchangeable, the gap between the best one and the twelfth is small, and a replacement is usually sitting on waivers in week three, so bench depth at the skill positions is worth more than locking them in early. The tool does not recommend them at all until your remaining picks are nothing but your open kicker and defense slots, and never recommends a second one for the bench. They stay on the board the whole time if you want one early. An earlier version gave them full weight as soon as the other starters were filled, which produced a kicker in round eight. A reader caught it during a live draft. A weight instead of a zero was tried first, and lost: late in a draft the bench candidates are all below replacement, and any positive weight on a defense eventually beats them. Tight ends in a flex slot get half weight for a related reason: tight end projections fall off steeply at the top, so the wait gap oversells a second tight end when a receiver would start every week. It is a blunt instrument on purpose. A draft is not the time for a subtle one.</p>
+  <p>Players on injured reserve, on the physically-unable-to-perform list, suspended, or otherwise inactive for the season are never recommended, though they stay on the board with a red tag in case you want them anyway. Week-to-week designations are different, because a draft is for the season: questionable costs a player five percent of their score, doubtful or out for the coming game costs fifteen, and all three carry a yellow tag naming the status.</p>
 
   <h2>Tiers and position runs</h2>
   <p>Within each position, players are sorted by projection, and a new tier begins wherever the drop to the next player is more than six percent of the previous player&rsquo;s points, or eight points, whichever is larger. The <b>Position runs</b> panel counts how many players are left in the top remaining tier and the size of the drop after them. When that count reaches two, the note turns yellow. That is the moment a run at the position is about to cost you.</p>
